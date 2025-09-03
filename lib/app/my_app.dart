@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:tasky/core/theme/dark_theme.dart';
 import 'package:tasky/core/theme/light_theme.dart';
 import 'package:tasky/core/theme/theme_controller.dart';
-import 'package:tasky/view/main_screen.dart';
-import 'package:tasky/view/weclome_screen.dart';
+import 'package:tasky/feature/navigation/main_screen.dart';
+import 'package:tasky/feature/welcome/weclome_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key, required this.username});
