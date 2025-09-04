@@ -6,9 +6,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tasky/Models/task_models.dart';
 import 'package:tasky/core/services/preferences_manager.dart';
 import 'package:tasky/feature/tasks/add_task.dart';
-import 'package:tasky/widgets/achieved_tasks_widget.dart';
-import 'package:tasky/widgets/high_priority_tasks_widget.dart';
-import 'package:tasky/widgets/sliver_tasks_list.dart';
+import 'package:tasky/feature/home/components/achieved_tasks_widget.dart';
+import 'package:tasky/feature/home/components/high_priority_tasks_widget.dart';
+import 'package:tasky/feature/home/components/sliver_tasks_list.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
