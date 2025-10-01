@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tasky/core/constants/key_storage.dart';
 import 'package:tasky/core/services/preferences_manager.dart';
 import 'package:tasky/core/theme/theme_controller.dart';
 import 'package:tasky/feature/profile/user_details_screen.dart';
@@ -31,8 +32,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _loadUserName() async {
     setState(() {
-      username = PreferencesManager().getString('Username') ?? '';
-      imageProfile = PreferencesManager().getString('user_image');
+      username = PreferencesManager().getString(KeyStorage.username) ?? '';
+      imageProfile = PreferencesManager().getString(KeyStorage.userImage);
       isLoadData = false;
     });
   }
@@ -40,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _LoadDescription() async {
     setState(() {
       motivationQuoteKey =
-          PreferencesManager().getString('description') ??
+          PreferencesManager().getString(KeyStorage.description) ??
           'One task at a time.One step closer.';
     });
   }
@@ -165,9 +166,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Divider(thickness: 1, color: Color(0xff6E6E6E), indent: 1),
             ListTile(
               onTap: () async {
-                PreferencesManager().remove('Username');
-                PreferencesManager().remove('tasks');
-                PreferencesManager().remove('description');
+                PreferencesManager().remove(KeyStorage.username);
+                PreferencesManager().remove(KeyStorage.tasks);
+                PreferencesManager().remove(KeyStorage.description);
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
@@ -265,7 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final newImagePath = await File(
       file.path,
     ).copy('${appDir.path}/${file.name}');
-    await PreferencesManager().setString('user_image', newImagePath.path);
+    await PreferencesManager().setString(KeyStorage.userImage, newImagePath.path);
     print(appDir.path);
   }
 }
