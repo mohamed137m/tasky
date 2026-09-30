@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 ThemeData darkTheme = ThemeData(
   useMaterial3: true,
@@ -34,55 +35,53 @@ ThemeData darkTheme = ThemeData(
     }),
   ),
   elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ButtonStyle(
-      backgroundColor: WidgetStateProperty.all(Color(0xFF15B86C)),
-      foregroundColor: WidgetStateProperty.all(Color(0xFFFFFCFC)),
-      fixedSize: WidgetStateProperty.all(Size(double.infinity, 42)),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Color(0xFF15B86C),
+      foregroundColor: Color(0xFFFFFCFC),
+      fixedSize: Size(double.infinity, 42),
     ),
   ),
   textButtonTheme: TextButtonThemeData(
-    style: ButtonStyle(
-      foregroundColor: WidgetStateProperty.all(Color(0xFFFFFCFC)),
-    ),
+    style: TextButton.styleFrom(foregroundColor: Color(0xFFFFFCFC)),
   ),
   textTheme: TextTheme(
     displaySmall: TextStyle(
       color: Color(0xffFFFFFF),
-      fontSize: 28,
+      fontSize: 28.sp,
       fontWeight: FontWeight.w400,
     ),
     labelSmall: TextStyle(color: Color(0xff6D6D6D), fontSize: 14),
     labelMedium: TextStyle(
       color: Color(0xffC6C6C6),
-      fontSize: 14,
+      fontSize: 14.sp,
       fontWeight: FontWeight.w400,
     ),
     //isDone Tasks
     displayMedium: TextStyle(
       color: Color(0xffA0A0A0),
-      fontSize: 16,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w400,
       decoration: TextDecoration.lineThrough,
       decorationColor: Color(0xffA0A0A0),
     ),
     titleSmall: TextStyle(
       color: Color(0xffC6C6C6),
-      fontSize: 14,
+      fontSize: 14.sp,
       fontWeight: FontWeight.w400,
     ),
     titleMedium: TextStyle(
       color: Color(0xffFFFCFC),
-      fontSize: 16,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w400,
     ),
     titleLarge: TextStyle(
       color: Color(0xffFFFCFC),
-      fontSize: 20,
+      fontSize: 20.sp,
       fontWeight: FontWeight.w400,
     ),
     displayLarge: TextStyle(
       color: Color(0xffFFFCFC),
-      fontSize: 32,
+      fontSize: 32.sp,
       fontWeight: FontWeight.w400,
     ),
   ),
@@ -116,7 +115,7 @@ ThemeData darkTheme = ThemeData(
   listTileTheme: ListTileThemeData(
     titleTextStyle: TextStyle(
       color: Color(0xffFFFCFC),
-      fontSize: 16,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w400,
     ),
   ),
@@ -139,5 +138,4 @@ ThemeData darkTheme = ThemeData(
     contentTextStyle: TextStyle(color: Colors.white),
     backgroundColor: Color(0xff181818),
   ),
-  
 );

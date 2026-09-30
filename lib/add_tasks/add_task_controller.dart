@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:tasky/Models/task_models.dart';
-import 'package:tasky/core/constants/key_storage.dart';
-import 'package:tasky/core/services/preferences_manager.dart';
+import 'package:tasky/core/services/hive_storage_manger.dart';
 
 class AddTaskController extends ChangeNotifier {
   bool isHighPriority = true;
@@ -16,24 +13,20 @@ class AddTaskController extends ChangeNotifier {
 
   void addTasks(BuildContext context) async {
     if (key.currentState?.validate() ?? false) {
-      final taskJson = PreferencesManager().getString(KeyStorage.tasks);
-      List<dynamic> listTasks = [];
-
-      if (taskJson != null) {
-        listTasks = jsonDecode(taskJson);
-      }
+      List<TaskModels> tasks = HiveStorageManger().loadTasks();
       TaskModels models = TaskModels(
-        id: listTasks.length + 1,
+        id: tasks.length + 1,
         taskName: taskNameController.text,
         taskDescription: taskDescriptionController.text,
         isHighPriority: isHighPriority,
       );
 
-      listTasks.add(models.toJson());
+      tasks.add(models);
 
-      final taskEncode = jsonEncode(listTasks);
-      await PreferencesManager().setString(KeyStorage.tasks, taskEncode);
-      Navigator.of(context).pop(true);
+      await HiveStorageManger().saveTasks(tasks);
+      if (context.mounted) {
+        Navigator.of(context).pop(true);
+      }
     }
     notifyListeners();
   }
@@ -41,5 +34,12 @@ class AddTaskController extends ChangeNotifier {
   toggle(bool value) {
     isHighPriority = value;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    taskNameController.dispose();
+    taskDescriptionController.dispose();
+    super.dispose();
   }
 }

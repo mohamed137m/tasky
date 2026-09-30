@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.io.File
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -13,7 +14,7 @@ if (keystorePropertiesFile.exists()) {
 }
 android {
     namespace = "com.codeplus.tasky"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -31,16 +32,29 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
         signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as? String
+            keyPassword = keystoreProperties["keyPassword"] as? String
+            storeFile = keystoreProperties["storeFile"]?.let { rawPath ->
+                val path = rawPath.toString()
+                val directFile = File(path)
+                val resolved = when {
+                    directFile.exists() -> directFile
+                    file(path).exists() -> file(path)
+                    rootProject.file(path).exists() -> rootProject.file(path)
+                    rootProject.file("../$path").exists() -> rootProject.file("../$path")
+                    rootProject.file("../keystore.jks").exists() -> rootProject.file("../keystore.jks")
+                    rootProject.file("keystore.jks").exists() -> rootProject.file("keystore.jks")
+                    else -> file(path)
+                }
+                resolved.canonicalFile
+            }
+            storePassword = keystoreProperties["storePassword"] as? String
         }
     }
     buildTypes {

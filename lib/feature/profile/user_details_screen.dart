@@ -28,6 +28,13 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
   }
 
   @override
+  void dispose() {
+    controllerUsername.dispose();
+    motivationQuoteKey.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -83,7 +90,9 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                       KeyStorage.description,
                       motivationQuoteKey.value.text,
                     );
-                    Navigator.of(context).pop(true);
+                    if (context.mounted) {
+                      Navigator.of(context).pop(true);
+                    }
                   }
                 },
                 label: Text('Save Changes'),

@@ -1,8 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:tasky/Models/task_models.dart';
 import 'package:tasky/core/constants/key_storage.dart';
+import 'package:tasky/core/services/hive_storage_manger.dart';
 import 'package:tasky/core/services/preferences_manager.dart';
 
 class HomeController extends ChangeNotifier {
@@ -28,8 +27,7 @@ class HomeController extends ChangeNotifier {
   doneTask(bool? value, int? index) async {
     tasks[index!].isDone = value ?? false;
     calculatePercentTasks();
-    final updatedTask = tasks.map((element) => element.toJson()).toList();
-    PreferencesManager().setString(KeyStorage.tasks, jsonEncode(updatedTask));
+    await HiveStorageManger().saveTasks(tasks);
     notifyListeners();
   }
 
@@ -41,15 +39,8 @@ class HomeController extends ChangeNotifier {
 
   void loadTaskData() async {
     isLoading = true;
-    final finalTask = PreferencesManager().getString(KeyStorage.tasks);
-    if (finalTask != null) {
-      final taskAfterDecode = jsonDecode(finalTask) as List<dynamic>;
-      tasks = taskAfterDecode
-          .map((element) => TaskModels.fromJson(element))
-          .toList();
-      calculatePercentTasks();
-    }
-
+    tasks = HiveStorageManger().loadTasks();
+    calculatePercentTasks();
     isLoading = false;
     notifyListeners();
   }
@@ -72,8 +63,7 @@ class HomeController extends ChangeNotifier {
     if (id == null) return;
     tasks.removeWhere((task) => task.id == id);
     calculatePercentTasks();
-    final updateTask = tasks.map((e) => e.toJson()).toList();
-    PreferencesManager().setString(KeyStorage.tasks, jsonEncode(updateTask));
+    HiveStorageManger().saveTasks(tasks);
     notifyListeners();
   }
 }

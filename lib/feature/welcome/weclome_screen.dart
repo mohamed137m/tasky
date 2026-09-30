@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:tasky/core/constants/app_sizes.dart';
 import 'package:tasky/core/constants/key_storage.dart';
 import 'package:tasky/core/services/preferences_manager.dart';
 import 'package:tasky/core/widgets/custom_text_form_field.dart';
@@ -14,23 +16,23 @@ class WelcomeScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: AppSizes.w16),
           child: Form(
             key: _key,
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: 28),
+                  SizedBox(height: AppSizes.h28),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SvgPicture.asset(
                         'assets/image/Logo.svg',
-                        width: 42,
-                        height: 42,
+                        width: AppSizes.w42,
+                        height: AppSizes.h42,
                       ),
-                      SizedBox(width: 16),
+                      SizedBox(width: 16.w),
                       Text(
                         'Tasky',
                         style: Theme.of(context).textTheme.displaySmall,
@@ -38,7 +40,7 @@ class WelcomeScreen extends StatelessWidget {
                     ],
                   ),
 
-                  SizedBox(height: 118),
+                  SizedBox(height: AppSizes.h100),
                   Column(
                     children: [
                       Row(
@@ -46,33 +48,31 @@ class WelcomeScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Welcome To Tasky',
-                            style: Theme.of(
-                              context,
-                            ).textTheme.displaySmall!.copyWith(fontSize: 24),
+                            style: Theme.of(context).textTheme.displaySmall!
+                                .copyWith(fontSize: AppSizes.sp24),
                           ),
-                          SizedBox(width: 8),
+                          SizedBox(width: AppSizes.w8),
                           SvgPicture.asset('assets/image/waving_hand.svg'),
                         ],
                       ),
-                      SizedBox(height: 10),
+                      SizedBox(height: AppSizes.h10),
                       Text(
                         'Your productivity journey starts here.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.displaySmall!.copyWith(fontSize: 16),
+                        style: Theme.of(context).textTheme.displaySmall!
+                            .copyWith(fontSize: AppSizes.sp16),
                       ),
                     ],
                   ),
-                  SizedBox(height: 36),
+                  SizedBox(height: AppSizes.h36),
                   SvgPicture.asset(
                     'assets/image/pana.svg',
-                    width: 215,
-                    height: 204.39450073242188,
+                    width: AppSizes.w200,
+                    height: AppSizes.h200,
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 36),
+                      SizedBox(height: AppSizes.h36),
                       CustomTextFormField(
                         validator: (String? value) {
                           if (value == null || value.trim().isEmpty) {
@@ -84,7 +84,7 @@ class WelcomeScreen extends StatelessWidget {
                         hintText: 'Enter Full Name',
                         textTitle: "Full Name",
                       ),
-                      SizedBox(height: 36),
+                      SizedBox(height: AppSizes.h36),
                       ElevatedButton(
                         onPressed: () async {
                           if (_key.currentState?.validate() ?? false) {
@@ -111,8 +111,8 @@ class WelcomeScreen extends StatelessWidget {
                                 ),
                                 elevation: 8,
                                 margin: EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
+                                  horizontal: AppSizes.w16,
+                                  vertical: AppSizes.h10,
                                 ),
                                 duration: Duration(seconds: 3),
                                 content: Row(
@@ -121,12 +121,12 @@ class WelcomeScreen extends StatelessWidget {
                                       Icons.error_outline,
                                       color: Colors.white,
                                     ),
-                                    SizedBox(width: 12),
+                                    SizedBox(width: AppSizes.w12),
                                     Expanded(
                                       child: Text(
                                         'Please enter your full name',
                                         style: TextStyle(
-                                          fontSize: 15,
+                                          fontSize: AppSizes.sp16,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -141,14 +141,14 @@ class WelcomeScreen extends StatelessWidget {
                           backgroundColor: Color(0xff15B86C),
                           fixedSize: Size(
                             MediaQuery.of(context).size.width,
-                            50,
+                            AppSizes.h50,
                           ),
                         ),
                         child: Text(
                           'Let’s Get Started',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: AppSizes.h16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

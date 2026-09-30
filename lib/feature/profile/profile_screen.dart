@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tasky/core/constants/key_storage.dart';
+import 'package:tasky/core/services/hive_storage_manger.dart';
 import 'package:tasky/core/services/preferences_manager.dart';
 import 'package:tasky/core/theme/theme_controller.dart';
 import 'package:tasky/feature/profile/user_details_screen.dart';
@@ -26,7 +27,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     _loadUserName();
-    _LoadDescription();
+    _loadDescription();
     super.initState();
   }
 
@@ -38,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void _LoadDescription() async {
+  void _loadDescription() async {
     setState(() {
       motivationQuoteKey =
           PreferencesManager().getString(KeyStorage.description) ??
@@ -131,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
                 if (result != null && result) {
-                  _LoadDescription();
+                  _loadDescription();
                   _loadUserName();
                 }
               },
@@ -169,15 +170,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 PreferencesManager().remove(KeyStorage.username);
                 PreferencesManager().remove(KeyStorage.tasks);
                 PreferencesManager().remove(KeyStorage.description);
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) {
-                      return WelcomeScreen();
-                    },
-                  ),
-                  (Route<dynamic> route) => false,
-                );
+                await HiveStorageManger().clear();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (BuildContext context) {
+                        return WelcomeScreen();
+                      },
+                    ),
+                    (Route<dynamic> route) => false,
+                  );
+                }
               },
               contentPadding: EdgeInsets.zero,
               leading: CustomSvgPicture(
@@ -266,7 +270,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final newImagePath = await File(
       file.path,
     ).copy('${appDir.path}/${file.name}');
-    await PreferencesManager().setString(KeyStorage.userImage, newImagePath.path);
-    print(appDir.path);
+    await PreferencesManager().setString(
+      KeyStorage.userImage,
+      newImagePath.path,
+    );
   }
 }

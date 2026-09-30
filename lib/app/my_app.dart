@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tasky/core/theme/dark_theme.dart';
 import 'package:tasky/core/theme/light_theme.dart';
 import 'package:tasky/core/theme/theme_controller.dart';
@@ -13,13 +14,19 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeController.themeNotifier,
       builder: (context, ThemeMode value, Widget? child) {
-        return MaterialApp(
-          title: 'Tasky',
-          debugShowCheckedModeBanner: false,
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: ThemeController.themeNotifier.value,
-          home: username == null ? WelcomeScreen() : MainScreen(),
+        return ScreenUtilInit(
+          designSize: Size(375, 809),
+          minTextAdapt: true,
+          builder:(context, child) {
+            return  MaterialApp(
+            title: 'Tasky',
+            debugShowCheckedModeBanner: false,
+            theme: lightTheme,
+            darkTheme: darkTheme,
+            themeMode: ThemeController.themeNotifier.value,
+            home: username == null ? WelcomeScreen() : MainScreen(),
+          );
+          } ,
         );
       },
     );

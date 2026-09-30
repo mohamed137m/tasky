@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
-import 'package:tasky/Models/task_models.dart';
 import 'package:tasky/feature/home/home_controller.dart';
 import 'package:tasky/add_tasks/add_task.dart';
 import 'package:tasky/feature/home/components/achieved_tasks_widget.dart';
@@ -27,7 +26,7 @@ class HomeScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (_) => AddTask()),
                   );
-                  if (result != null && result) {
+                  if (result != null && result && context.mounted) {
                     context.read<HomeController>().loadTaskData();
                   }
                 },

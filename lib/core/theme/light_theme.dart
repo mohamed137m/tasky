@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 ThemeData lightTheme = ThemeData(
   useMaterial3: true,
@@ -46,40 +47,40 @@ ThemeData lightTheme = ThemeData(
   textTheme: TextTheme(
     displaySmall: TextStyle(
       color: Color(0xff161F1B),
-      fontSize: 28,
+      fontSize: 28.sp,
       fontWeight: FontWeight.w400,
     ),
     labelSmall: TextStyle(color: Color(0xff9E9E9E), fontSize: 14),
     labelMedium: TextStyle(
       color: Color(0xff3A4640),
-      fontSize: 14,
+      fontSize: 14.sp,
       fontWeight: FontWeight.w400,
     ),
     titleSmall: TextStyle(
       color: Color(0xff3A4640),
-      fontSize: 14,
+      fontSize: 14.sp,
       fontWeight: FontWeight.w400,
     ),
     titleMedium: TextStyle(
       color: Color(0xff161F1B),
-      fontSize: 16,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w400,
     ),
     titleLarge: TextStyle(
       color: Color(0xff161F1B),
-      fontSize: 20,
+      fontSize: 20.sp,
       fontWeight: FontWeight.w400,
     ),
     displayLarge: TextStyle(
       color: Color(0xff161F1B),
-      fontSize: 32,
+      fontSize: 32.sp,
       fontWeight: FontWeight.w400,
     ),
 
     //isDone Tasks
     displayMedium: TextStyle(
       color: Color(0xff6A6A6A),
-      fontSize: 16,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w400,
       decoration: TextDecoration.lineThrough,
       decorationColor: Color(0xff6A6A6A),
@@ -120,7 +121,7 @@ ThemeData lightTheme = ThemeData(
   listTileTheme: ListTileThemeData(
     titleTextStyle: TextStyle(
       color: Color(0xff161F1B),
-      fontSize: 16,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w400,
     ),
   ),

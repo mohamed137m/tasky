@@ -1,10 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:tasky/Models/task_models.dart';
-import 'package:tasky/core/constants/key_storage.dart';
 import 'package:tasky/core/enum/enum_menu_actions_item.dart';
-import 'package:tasky/core/services/preferences_manager.dart';
+import 'package:tasky/core/services/hive_storage_manger.dart';
 import 'package:tasky/core/theme/theme_controller.dart';
 import 'package:tasky/core/widgets/custom_check_box_widget.dart';
 import 'package:tasky/core/widgets/custom_text_form_field.dart';
@@ -217,14 +214,8 @@ class TaskListItem extends StatelessWidget {
                     ElevatedButton.icon(
                       onPressed: () async {
                         if (key.currentState?.validate() ?? false) {
-                          final taskJson = PreferencesManager().getString(
-                            KeyStorage.tasks,
-                          );
-                          List<dynamic> listTasks = [];
-
-                          if (taskJson != null) {
-                            listTasks = jsonDecode(taskJson);
-                          }
+                          List<TaskModels> tasks = HiveStorageManger()
+                              .loadTasks();
                           TaskModels newModels = TaskModels(
                             id: model.id,
                             taskName: taskNameController.text,
@@ -233,20 +224,16 @@ class TaskListItem extends StatelessWidget {
                             isDone: model.isDone,
                           );
 
-                          final item = listTasks.firstWhere(
-                            (e) => e['id'] == model.id,
+                          final index = tasks.indexWhere(
+                            (e) => e.id == model.id,
                           );
-
-                          final int index = listTasks.indexOf(item);
-
-                          listTasks[index] = newModels;
-
-                          final taskEncode = jsonEncode(listTasks);
-                          await PreferencesManager().setString(
-                            KeyStorage.tasks,
-                            taskEncode,
-                          );
-                          Navigator.of(context).pop(true);
+                          if (index != -1) {
+                            tasks[index] = newModels;
+                            await HiveStorageManger().saveTasks(tasks);
+                          }
+                          if (context.mounted) {
+                            Navigator.of(context).pop(true);
+                          }
                         }
                       },
                       label: Text('Edit'),
