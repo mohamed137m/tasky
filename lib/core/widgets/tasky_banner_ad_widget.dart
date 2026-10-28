@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:tasky/core/services/ad_service.dart';
@@ -19,42 +20,76 @@ class TaskyBannerAdWidget extends StatefulWidget {
 class _TaskyBannerAdWidgetState extends State<TaskyBannerAdWidget> {
   BannerAd? _bannerAd;
   bool _isLoaded = false;
+  Timer? _retryTimer;
 
   @override
   void initState() {
     super.initState();
+    AdService().configurationChanges.addListener(_reloadBanner);
     _loadBanner();
   }
 
   void _loadBanner() {
-    _bannerAd = BannerAd(
-      adUnitId: AdService().bannerAdUnitId,
+    final service = AdService();
+    if (!mounted || !service.isSupported || service.bannerAdUnitId.isEmpty) {
+      return;
+    }
+    final banner = BannerAd(
+      adUnitId: service.bannerAdUnitId,
       size: widget.adSize,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (_) {
-          if (mounted) {
-            setState(() => _isLoaded = true);
-          }
+        onAdLoaded: (ad) {
+          if (!mounted || !identical(ad, _bannerAd)) return;
+          setState(() => _isLoaded = true);
         },
         onAdFailedToLoad: (ad, error) {
           debugPrint('BannerAd failed to load: $error');
-          ad.dispose();
-          if (mounted) {
-            setState(() {
-              _bannerAd = null;
-              _isLoaded = false;
-            });
-          }
+          _handleFailure(ad);
         },
       ),
     );
-    _bannerAd?.load();
+    _bannerAd = banner;
+    unawaited(
+      banner.load().catchError((Object error) {
+        debugPrint('Banner request failed: $error');
+        _handleFailure(banner);
+      }),
+    );
+  }
+
+  void _handleFailure(Ad ad) {
+    if (!mounted || !identical(ad, _bannerAd)) return;
+    unawaited(ad.dispose());
+    setState(() {
+      _bannerAd = null;
+      _isLoaded = false;
+    });
+    // Bounded request frequency; never retry in a tight no-fill loop.
+    _retryTimer?.cancel();
+    _retryTimer = Timer(const Duration(seconds: 30), _loadBanner);
+  }
+
+  void _reloadBanner() {
+    _retryTimer?.cancel();
+    unawaited(_bannerAd?.dispose());
+    _bannerAd = null;
+    _isLoaded = false;
+    if (mounted) setState(() {});
+    _loadBanner();
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskyBannerAdWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.adSize != widget.adSize) _reloadBanner();
   }
 
   @override
   void dispose() {
-    _bannerAd?.dispose();
+    AdService().configurationChanges.removeListener(_reloadBanner);
+    _retryTimer?.cancel();
+    unawaited(_bannerAd?.dispose());
     super.dispose();
   }
 

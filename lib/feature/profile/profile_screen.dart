@@ -555,6 +555,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () {
                         AdService().showInterstitialAd(
                           onComplete: () {
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Interstitial Ad Triggered!'),
@@ -578,6 +579,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () {
                         AdService().showRewardedAd(
                           onUserEarnedReward: (reward) {
+                            if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
