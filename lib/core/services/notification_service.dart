@@ -1,4 +1,8 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:tasky/core/constants/motivational_messages.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,7 +10,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:tasky/Models/task_models.dart';
 
-class NotificationService {
+class NotificationService with WidgetsBindingObserver {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -16,11 +20,36 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  static const String keyMotivationEnabled = 'motivation_enabled';
+  static const String _keyMotivationAnchor = 'motivation_anchor';
+  // Negative IDs cannot overlap task IDs or existing system notifications.
+  static const int _motivationBaseId = -2000;
+  static const int _motivationSlots = 12;
+  static const Duration motivationInterval = Duration(hours: 2);
+  Future<void> _motivationQueue = Future<void>.value();
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isInitialized) {
+      unawaited(_refreshNotifications());
+    }
+  }
+
+  Future<void> _refreshNotifications() async {
+    await _configureLocalTimeZone();
+    await scheduleSmartDailyNotifications();
+  }
+
+  /// Stable rotation: no repeated message for 2,000 consecutive time slots.
+  static String motivationalMessageForSlot(int slot) =>
+      motivationalMessages[(slot * 37) % motivationalMessages.length];
+
   // Preferences keys
   static const String keyNotificationsEnabled = 'notifications_enabled';
   static const String keyTaskRemindersEnabled = 'task_reminders_enabled';
   static const String keyMorningBriefingEnabled = 'morning_briefing_enabled';
-  static const String keyEveningStreakSaverEnabled = 'evening_streak_saver_enabled';
+  static const String keyEveningStreakSaverEnabled =
+      'evening_streak_saver_enabled';
   static const String keyMorningBriefingHour = 'morning_briefing_hour';
   static const String keyMorningBriefingMinute = 'morning_briefing_minute';
   static const String keyEveningStreakHour = 'evening_streak_hour';
@@ -39,7 +68,7 @@ class NotificationService {
     try {
       // 1. Initialize Timezones
       tz.initializeTimeZones();
-      _configureLocalTimeZone();
+      await _configureLocalTimeZone();
 
       // 2. Android Initialization Settings
       const AndroidInitializationSettings androidSettings =
@@ -48,10 +77,10 @@ class NotificationService {
       // 3. iOS Initialization Settings
       const DarwinInitializationSettings darwinSettings =
           DarwinInitializationSettings(
-        requestAlertPermission: false,
-        requestBadgePermission: false,
-        requestSoundPermission: false,
-      );
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          );
 
       const InitializationSettings initSettings = InitializationSettings(
         android: androidSettings,
@@ -67,6 +96,7 @@ class NotificationService {
       );
 
       _isInitialized = true;
+      WidgetsBinding.instance.addObserver(this);
       debugPrint('NotificationService initialized successfully');
 
       // 4. Request permissions gracefully
@@ -79,18 +109,24 @@ class NotificationService {
     }
   }
 
-  void _configureLocalTimeZone() {
+  Future<void> _configureLocalTimeZone() async {
     try {
-      final Duration offset = DateTime.now().timeZoneOffset;
-      final locations = tz.timeZoneDatabase.locations;
-      for (final entry in locations.entries) {
-        if (entry.value.currentTimeZone.offset == offset) {
-          tz.setLocalLocation(entry.value);
-          return;
-        }
-      }
-    } catch (e) {
-      debugPrint('Failed to configure local timezone, falling back to UTC: $e');
+      final zone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(zone.identifier));
+    } catch (error) {
+      // A fixed offset preserves today's wall-clock times if the native lookup
+      // fails, rather than silently scheduling daily alerts in UTC.
+      final offset = DateTime.now().timeZoneOffset;
+      tz.setLocalLocation(
+        tz.Location('device_offset', [0], [0], [
+          tz.TimeZone(
+            offset,
+            isDst: false,
+            abbreviation: 'Local',
+          ),
+        ]),
+      );
+      debugPrint('Using fixed local timezone offset: $error');
     }
   }
 
@@ -98,15 +134,23 @@ class NotificationService {
     bool? granted = false;
     try {
       if (!kIsWeb && Platform.isAndroid) {
-        final androidImplementation =
-            _notificationsPlugin.resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>();
+        final androidImplementation = _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
         granted = await androidImplementation?.requestNotificationsPermission();
         await androidImplementation?.requestExactAlarmsPermission();
-      } else if (!kIsWeb && (Platform.isIOS || Platform.isMacOS)) {
-        final iosImplementation =
-            _notificationsPlugin.resolvePlatformSpecificImplementation<
-                IOSFlutterLocalNotificationsPlugin>();
+      } else if (!kIsWeb && Platform.isMacOS) {
+        granted = await _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin
+            >()
+            ?.requestPermissions(alert: true, badge: true, sound: true);
+      } else if (!kIsWeb && Platform.isIOS) {
+        final iosImplementation = _notificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >();
         granted = await iosImplementation?.requestPermissions(
           alert: true,
           badge: true,
@@ -146,7 +190,10 @@ class NotificationService {
     }
 
     try {
-      final tz.TZDateTime tzDate = tz.TZDateTime.from(scheduledDateTime, tz.local);
+      final tz.TZDateTime tzDate = tz.TZDateTime.from(
+        scheduledDateTime,
+        tz.local,
+      );
       final notificationId = taskNotificationBaseId + task.id;
 
       // Cancel previous notification for this task before setting new one
@@ -154,14 +201,15 @@ class NotificationService {
 
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        'tasky_task_reminders',
-        'Task Reminders',
-        channelDescription: 'Notifications for task deadlines and reminders',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: true,
-        enableVibration: true,
-      );
+            'tasky_task_reminders',
+            'Task Reminders',
+            channelDescription:
+                'Notifications for task deadlines and reminders',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+          );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
         presentAlert: true,
@@ -188,7 +236,9 @@ class NotificationService {
         payload: 'task_${task.id}',
       );
 
-      debugPrint('Scheduled reminder for task "${task.taskName}" at $tzDate (ID: $notificationId)');
+      debugPrint(
+        'Scheduled reminder for task "${task.taskName}" at $tzDate (ID: $notificationId)',
+      );
     } catch (e) {
       debugPrint('Failed to schedule task reminder: $e');
     }
@@ -250,6 +300,7 @@ class NotificationService {
 
   /// Schedules daily smart notifications: Morning Briefing and Evening Streak Saver.
   Future<void> scheduleSmartDailyNotifications() async {
+    await scheduleMotivationalNotifications();
     final prefs = await SharedPreferences.getInstance();
     final notificationsEnabled = prefs.getBool(keyNotificationsEnabled) ?? true;
     if (!notificationsEnabled) {
@@ -267,7 +318,8 @@ class NotificationService {
       await _scheduleDailyTimeNotification(
         id: idMorningBriefing,
         title: '☀️ Good Morning! Time to Conquer Today',
-        body: 'Plan your priorities in Tasky and keep your winning streak going strong! 🚀',
+        body:
+            'Plan your priorities in Tasky and keep your winning streak going strong! 🚀',
         hour: morningHour,
         minute: morningMinute,
         channelId: 'tasky_morning_briefing',
@@ -286,7 +338,8 @@ class NotificationService {
       await _scheduleDailyTimeNotification(
         id: idEveningStreakSaver,
         title: '🔥 Don\'t Break Your Streak!',
-        body: 'Review your day, mark completed habits & tasks before bedtime! 🌟',
+        body:
+            'Review your day, mark completed habits & tasks before bedtime! 🌟',
         hour: eveningHour,
         minute: eveningMinute,
         channelId: 'tasky_streak_saver',
@@ -295,6 +348,86 @@ class NotificationService {
     } else {
       await _notificationsPlugin.cancel(id: idEveningStreakSaver);
     }
+  }
+
+  /// Refresh on launch/resume and settings changes. Serialize refreshes so
+  /// toggling off cannot race an older refresh and leave alarms behind.
+  Future<void> scheduleMotivationalNotifications() {
+    _motivationQueue = _motivationQueue.then((_) async {
+      if (!_isInitialized) return;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        for (var i = 0; i < _motivationSlots; i++) {
+          await _notificationsPlugin.cancel(id: _motivationBaseId - i);
+        }
+        if (!(prefs.getBool(keyNotificationsEnabled) ?? true) ||
+            !(prefs.getBool(keyMotivationEnabled) ?? true)) {
+          await prefs.remove(_keyMotivationAnchor);
+          return;
+        }
+
+        final now = DateTime.now();
+        final anchor =
+            prefs.getInt(_keyMotivationAnchor) ?? now.millisecondsSinceEpoch;
+        await prefs.setInt(_keyMotivationAnchor, anchor);
+        final firstSlot =
+            ((now.millisecondsSinceEpoch - anchor) ~/
+                motivationInterval.inMilliseconds) +
+            1;
+        // iOS allows only 64 pending notifications for the whole application.
+        // Reserve space for the two daily alerts and prioritize existing tasks.
+        final pending = await _notificationsPlugin
+            .pendingNotificationRequests();
+        final otherCount = pending
+            .where(
+              (n) => n.id != idMorningBriefing && n.id != idEveningStreakSaver,
+            )
+            .length;
+        final capacity = (62 - otherCount).clamp(0, _motivationSlots);
+        if (capacity < 12) {
+          debugPrint(
+            'Not enough notification slots for motivational reminders',
+          );
+          return;
+        }
+        const details = NotificationDetails(
+          android: AndroidNotificationDetails(
+            'tasky_motivation',
+            'رسائل تحفيزية',
+            channelDescription: 'رسالة تحفيزية بالعربي كل ساعتين',
+            importance: Importance.defaultImportance,
+            priority: Priority.defaultPriority,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentSound: true,
+          ),
+        );
+        for (var i = 0; i < capacity; i++) {
+          final slot = firstSlot + i;
+          final date = DateTime.fromMillisecondsSinceEpoch(
+            anchor + slot * motivationInterval.inMilliseconds,
+          );
+          // Twelve daily alarms keep a two-hour cadence without requiring
+          // background Dart execution. Resume rotates their message content.
+          await _notificationsPlugin.zonedSchedule(
+            id: _motivationBaseId - i,
+            title: 'دفعة تحفيز من Tasky 🌱',
+            body: motivationalMessageForSlot(slot),
+            scheduledDate: tz.TZDateTime.from(date, tz.local),
+            notificationDetails: details,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            matchDateTimeComponents: DateTimeComponents.time,
+            payload: 'motivation',
+          );
+        }
+      } catch (error, stack) {
+        debugPrint(
+          'Motivational notifications scheduling failed: $error\n$stack',
+        );
+      }
+    });
+    return _motivationQueue;
   }
 
   Future<void> _scheduleDailyTimeNotification({
@@ -325,12 +458,12 @@ class NotificationService {
 
       final AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        channelId,
-        channelName,
-        importance: Importance.high,
-        priority: Priority.high,
-        playSound: true,
-      );
+            channelId,
+            channelName,
+            importance: Importance.high,
+            priority: Priority.high,
+            playSound: true,
+          );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
         presentAlert: true,
@@ -354,7 +487,9 @@ class NotificationService {
         payload: 'smart_$id',
       );
 
-      debugPrint('Daily notification scheduled at $hour:$minute for $channelName');
+      debugPrint(
+        'Daily notification scheduled at $hour:$minute for $channelName',
+      );
     } catch (e) {
       debugPrint('Error scheduling daily notification: $e');
     }
@@ -371,14 +506,15 @@ class NotificationService {
     try {
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        'tasky_pomodoro',
-        'Pomodoro Focus Timer',
-        channelDescription: 'Notifications for Pomodoro focus and break sessions',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: true,
-        enableVibration: true,
-      );
+            'tasky_pomodoro',
+            'Pomodoro Focus Timer',
+            channelDescription:
+                'Notifications for Pomodoro focus and break sessions',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+          );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
         presentAlert: true,
@@ -409,18 +545,20 @@ class NotificationService {
   }
 
   /// Triggers an immediate test notification to verify sounds and banners.
-  Future<void> showTestNotification() async {
+  Future<bool> showTestNotification() async {
     try {
+      if (!_isInitialized) await init();
+      if (!_isInitialized || !await requestPermissions()) return false;
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-        'tasky_test',
-        'Test Notifications',
-        channelDescription: 'Test notifications channel for Tasky',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: true,
-        enableVibration: true,
-      );
+            'tasky_test',
+            'Test Notifications',
+            channelDescription: 'Test notifications channel for Tasky',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+          );
 
       const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
         presentAlert: true,
@@ -436,12 +574,15 @@ class NotificationService {
       await _notificationsPlugin.show(
         id: idTestNotification,
         title: '🔔 Tasky Notifications Active!',
-        body: 'Your smart notifications are fully set up and ready to keep you productive!',
+        body:
+            'Your smart notifications are fully set up and ready to keep you productive!',
         notificationDetails: platformDetails,
         payload: 'test_notification',
       );
+      return true;
     } catch (e) {
       debugPrint('Error showing test notification: $e');
+      return false;
     }
   }
 

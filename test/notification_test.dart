@@ -92,6 +92,7 @@ void main() {
       expect(find.text('Smart Notifications'), findsOneWidget);
       expect(find.text('Allow Notifications'), findsOneWidget);
       expect(find.text('Task Due Reminders'), findsOneWidget);
+      expect(find.text('رسائل تحفيزية'), findsOneWidget);
       expect(find.text('Morning Briefing'), findsOneWidget);
       expect(find.text('Evening Streak Saver'), findsOneWidget);
       expect(find.text('Send Test Alert'), findsOneWidget);

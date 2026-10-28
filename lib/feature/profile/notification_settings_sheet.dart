@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tasky/core/services/hive_storage_manger.dart';
 import 'package:tasky/core/services/notification_service.dart';
@@ -25,6 +25,7 @@ class NotificationSettingsSheet extends StatefulWidget {
 class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
   bool _notificationsEnabled = true;
   bool _taskRemindersEnabled = true;
+  bool _motivationEnabled = true;
   bool _morningBriefingEnabled = true;
   bool _eveningStreakSaverEnabled = true;
 
@@ -41,7 +42,10 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     setState(() {
+      _motivationEnabled =
+          prefs.getBool(NotificationService.keyMotivationEnabled) ?? true;
       _notificationsEnabled =
           prefs.getBool(NotificationService.keyNotificationsEnabled) ?? true;
       _taskRemindersEnabled =
@@ -50,7 +54,7 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
           prefs.getBool(NotificationService.keyMorningBriefingEnabled) ?? true;
       _eveningStreakSaverEnabled =
           prefs.getBool(NotificationService.keyEveningStreakSaverEnabled) ??
-              true;
+          true;
 
       final mHour =
           prefs.getInt(NotificationService.keyMorningBriefingHour) ?? 8;
@@ -58,7 +62,8 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
           prefs.getInt(NotificationService.keyMorningBriefingMinute) ?? 0;
       _morningTime = TimeOfDay(hour: mHour, minute: mMin);
 
-      final eHour = prefs.getInt(NotificationService.keyEveningStreakHour) ?? 20;
+      final eHour =
+          prefs.getInt(NotificationService.keyEveningStreakHour) ?? 20;
       final eMin =
           prefs.getInt(NotificationService.keyEveningStreakMinute) ?? 30;
       _eveningTime = TimeOfDay(hour: eHour, minute: eMin);
@@ -132,7 +137,9 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF15B86C).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFF15B86C,
+                          ).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -210,7 +217,9 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                           } else {
                             await NotificationService().requestPermissions();
                             final tasks = HiveStorageManger().loadTasks();
-                            await NotificationService().rescheduleAllTasks(tasks);
+                            await NotificationService().rescheduleAllTasks(
+                              tasks,
+                            );
                           }
                         },
                       ),
@@ -226,6 +235,31 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                       ignoring: !_notificationsEnabled,
                       child: Column(
                         children: [
+                          Material(
+                            color: cardBg,
+                            borderRadius: BorderRadius.circular(16),
+                            child: SwitchListTile(
+                              secondary: const Icon(
+                                Icons.auto_awesome_rounded,
+                                color: Color(0xFF15B86C),
+                              ),
+                              title: const Text('رسائل تحفيزية'),
+                              subtitle: const Text(
+                                '٢٠٠٠ رسالة بالعربي • إشعار كل ساعتين',
+                                textDirection: TextDirection.rtl,
+                              ),
+                              activeThumbColor: const Color(0xFF15B86C),
+                              value: _motivationEnabled,
+                              onChanged: (value) async {
+                                setState(() => _motivationEnabled = value);
+                                await _saveSetting(
+                                  NotificationService.keyMotivationEnabled,
+                                  value,
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           // 1. Task Due Reminders
                           Material(
                             color: cardBg,
@@ -261,13 +295,15 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                                     val,
                                   );
                                   if (!val) {
-                                    final tasks = HiveStorageManger().loadTasks();
+                                    final tasks = HiveStorageManger()
+                                        .loadTasks();
                                     for (final t in tasks) {
                                       await NotificationService()
                                           .cancelTaskReminder(t.id);
                                     }
                                   } else {
-                                    final tasks = HiveStorageManger().loadTasks();
+                                    final tasks = HiveStorageManger()
+                                        .loadTasks();
                                     await NotificationService()
                                         .rescheduleAllTasks(tasks);
                                   }
@@ -474,12 +510,15 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () async {
-                            await NotificationService().showTestNotification();
+                            final sent = await NotificationService()
+                                .showTestNotification();
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
+                                SnackBar(
                                   content: Text(
-                                    '🔔 Test notification sent! Check your notification bar.',
+                                    sent
+                                        ? '🔔 تم إرسال إشعار التجربة. راجع شريط الإشعارات.'
+                                        : 'تعذر إرسال الإشعار. فعّل إذن الإشعارات من إعدادات الجهاز.',
                                   ),
                                   backgroundColor: Color(0xFF15B86C),
                                   behavior: SnackBarBehavior.floating,
@@ -487,7 +526,10 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                               );
                             }
                           },
-                          icon: const Icon(Icons.notifications_none_rounded, size: 18),
+                          icon: const Icon(
+                            Icons.notifications_none_rounded,
+                            size: 18,
+                          ),
                           label: const Text(
                             'Send Test Alert',
                             style: TextStyle(fontSize: 13),
@@ -505,7 +547,9 @@ class _NotificationSettingsSheetState extends State<NotificationSettingsSheet> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             final tasks = HiveStorageManger().loadTasks();
-                            await NotificationService().rescheduleAllTasks(tasks);
+                            await NotificationService().rescheduleAllTasks(
+                              tasks,
+                            );
                             await NotificationService()
                                 .scheduleSmartDailyNotifications();
                             if (context.mounted) {
