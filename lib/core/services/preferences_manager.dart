@@ -9,9 +9,9 @@ class PreferencesManager {
   
   PreferencesManager._internal();
 
-  late final SharedPreferences _preferences;
+  late SharedPreferences _preferences;
 
-  init() async {
+  Future<void> init() async {
     _preferences = await SharedPreferences.getInstance();
   }
 
@@ -41,7 +41,7 @@ class PreferencesManager {
     return _preferences.getString(key);
   }
 
-  int? getInt(String key, int value) {
+  int? getInt(String key) {
     return _preferences.getInt(key);
   }
 

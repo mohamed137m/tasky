@@ -6,53 +6,61 @@ import 'package:tasky/feature/home/home_controller.dart';
 class SliverTasksList extends StatelessWidget {
   const SliverTasksList({super.key, this.textMessage});
   final String? textMessage;
+
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder:
-          (BuildContext context, HomeController controller, Widget? child) {
-            return controller.isLoading
-                ? SliverToBoxAdapter(
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        backgroundColor: Colors.blue,
-                      ),
-                    ),
-                  )
-                : controller.tasks.isEmpty
-                ? SliverToBoxAdapter(
-                    child: Center(
-                      child: Text(
-                        textAlign: TextAlign.center,
-                        textMessage ?? 'No Data',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                  )
-                : SliverPadding(
-                    padding: EdgeInsetsGeometry.only(bottom: 60),
-                    sliver: SliverList.separated(
-                      separatorBuilder: (BuildContext context, int index) {
-                        return SizedBox(height: 8);
-                      },
-                      itemCount: controller.tasks.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        return TaskListItem(
-                          models: controller.tasks[index],
-                          onChanged: (bool? value) {
-                            controller.calculatePercentTasks();
-                            controller.doneTask(value, index);
-                          },
-                          onDelete: (int id) {
-                            controller.deleteTask(id);
-                          },
-                          onEdit: () => controller.loadTaskData(),
-                        );
-                      },
-                    ),
-                  );
-          },
+    return Consumer<HomeController>(
+      builder: (BuildContext context, HomeController controller, Widget? child) {
+        if (controller.isLoading) {
+          return const SliverToBoxAdapter(
+            child: Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF15B86C),
+              ),
+            ),
+          );
+        }
+
+        final tasks = controller.filteredTasks;
+        if (tasks.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Text(
+                  textAlign: TextAlign.center,
+                  controller.tasks.isEmpty
+                      ? (textMessage ?? 'No tasks yet... Click + to add one! ✍️')
+                      : 'No tasks in "${controller.selectedCategory}" category',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ),
+          );
+        }
+
+        return SliverPadding(
+          padding: const EdgeInsets.only(bottom: 80),
+          sliver: SliverList.separated(
+            separatorBuilder: (BuildContext context, int index) {
+              return const SizedBox(height: 10);
+            },
+            itemCount: tasks.length,
+            itemBuilder: (BuildContext context, int index) {
+              return TaskListItem(
+                models: tasks[index],
+                onChanged: (bool? value) {
+                  controller.doneTask(value, index);
+                },
+                onDelete: (int id) {
+                  controller.deleteTask(id);
+                },
+                onEdit: () => controller.loadTaskData(),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

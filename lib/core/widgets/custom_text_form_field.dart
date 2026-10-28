@@ -9,11 +9,13 @@ class CustomTextFormField extends StatelessWidget {
     this.maxLines,
     required this.textTitle,
   });
+
   final Function(String?)? validator;
   final TextEditingController controllers;
   final String hintText;
   final int? maxLines;
   final String textTitle;
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -21,27 +23,24 @@ class CustomTextFormField extends StatelessWidget {
       children: [
         Text(
           textTitle,
-          style: Theme.of(
-            context,
-          ).textTheme.displaySmall!.copyWith(fontSize: 18),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
-          maxLines: maxLines,
+          maxLines: maxLines ?? 1,
           validator: validator != null
               ? (String? value) => validator!(value)
               : null,
-          style: Theme.of(
-            context,
-          ).textTheme.displaySmall!.copyWith(fontSize: 20),
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontSize: 15,
+              ),
           controller: controllers,
           decoration: InputDecoration(
-            filled: true,
             hintText: hintText,
-            hintStyle: Theme.of(context).textTheme.labelSmall,
-            border: Theme.of(context).inputDecorationTheme.border,
           ),
-          cursorColor: Colors.greenAccent,
+          cursorColor: const Color(0xFF15B86C),
         ),
       ],
     );

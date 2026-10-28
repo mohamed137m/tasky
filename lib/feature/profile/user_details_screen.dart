@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tasky/core/constants/key_storage.dart';
+import 'package:tasky/core/services/firestore_sync_service.dart';
 import 'package:tasky/core/services/preferences_manager.dart';
 import 'package:tasky/core/widgets/custom_text_form_field.dart';
 
@@ -90,6 +92,11 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
                       KeyStorage.description,
                       motivationQuoteKey.value.text,
                     );
+                    try {
+                      await FirebaseAuth.instance.currentUser
+                          ?.updateDisplayName(controllerUsername.value.text.trim());
+                    } catch (_) {}
+                    FirestoreSyncService().syncToCloud();
                     if (context.mounted) {
                       Navigator.of(context).pop(true);
                     }

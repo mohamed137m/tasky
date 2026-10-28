@@ -3,6 +3,9 @@ import java.io.FileInputStream
 import java.io.File
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
@@ -15,9 +18,10 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.codeplus.tasky"
     compileSdk = 36
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -41,18 +45,17 @@ android {
             keyAlias = keystoreProperties["keyAlias"] as? String
             keyPassword = keystoreProperties["keyPassword"] as? String
             storeFile = keystoreProperties["storeFile"]?.let { rawPath ->
-                val path = rawPath.toString()
-                val directFile = File(path)
-                val resolved = when {
-                    directFile.exists() -> directFile
-                    file(path).exists() -> file(path)
+                val path = rawPath.toString().trim()
+                val f = File(path)
+                when {
+                    f.isAbsolute && f.exists() -> f
                     rootProject.file(path).exists() -> rootProject.file(path)
                     rootProject.file("../$path").exists() -> rootProject.file("../$path")
-                    rootProject.file("../keystore.jks").exists() -> rootProject.file("../keystore.jks")
+                    file(path).exists() -> file(path)
+                    rootProject.rootDir.parentFile.resolve("keystore.jks").exists() -> rootProject.rootDir.parentFile.resolve("keystore.jks")
                     rootProject.file("keystore.jks").exists() -> rootProject.file("keystore.jks")
-                    else -> file(path)
-                }
-                resolved.canonicalFile
+                    else -> rootProject.rootDir.parentFile.resolve("keystore.jks")
+                }.canonicalFile
             }
             storePassword = keystoreProperties["storePassword"] as? String
         }
@@ -68,4 +71,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

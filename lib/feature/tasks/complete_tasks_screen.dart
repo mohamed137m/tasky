@@ -26,11 +26,8 @@ class CompleteTasksScreen extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: controller.isLoading
-                    ? Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          backgroundColor: Colors.blue,
-                        ),
+                    ? const Center(
+                        child: CircularProgressIndicator(),
                       )
                     : Consumer<TasksController>(
                         builder: (BuildContext context, value, Widget? child) {

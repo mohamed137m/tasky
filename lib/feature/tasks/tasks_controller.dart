@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tasky/Models/task_models.dart';
+import 'package:tasky/core/services/firestore_sync_service.dart';
 import 'package:tasky/core/services/hive_storage_manger.dart';
+import 'package:tasky/core/services/notification_service.dart';
 
 class TasksController extends ChangeNotifier {
   bool isLoading = false;
@@ -23,7 +25,13 @@ class TasksController extends ChangeNotifier {
     final newIndex = tasks.indexWhere((e) => e.id == toDoTasks[index].id);
 
     tasks[newIndex] = toDoTasks[index];
+    if (value == true) {
+      NotificationService().cancelTaskReminder(toDoTasks[index].id);
+    } else {
+      NotificationService().scheduleTaskReminder(toDoTasks[index]);
+    }
     await HiveStorageManger().saveTasks(tasks);
+    FirestoreSyncService().syncToCloud();
 
     _loadTaskData();
     notifyListeners();
@@ -36,7 +44,13 @@ class TasksController extends ChangeNotifier {
     final newIndex = tasks.indexWhere((e) => e.id == completeTask[index].id);
 
     tasks[newIndex] = completeTask[index];
+    if (value == true) {
+      NotificationService().cancelTaskReminder(completeTask[index].id);
+    } else {
+      NotificationService().scheduleTaskReminder(completeTask[index]);
+    }
     await HiveStorageManger().saveTasks(tasks);
+    FirestoreSyncService().syncToCloud();
 
     _loadTaskData();
     notifyListeners();
@@ -51,7 +65,13 @@ class TasksController extends ChangeNotifier {
     );
 
     tasks[newIndex] = highPriorityTasks[index];
+    if (value == true) {
+      NotificationService().cancelTaskReminder(highPriorityTasks[index].id);
+    } else {
+      NotificationService().scheduleTaskReminder(highPriorityTasks[index]);
+    }
     await HiveStorageManger().saveTasks(tasks);
+    FirestoreSyncService().syncToCloud();
 
     _loadTaskData();
     notifyListeners();
@@ -72,10 +92,13 @@ class TasksController extends ChangeNotifier {
 
   deleteTask(int? id) {
     if (id == null) return;
+    NotificationService().cancelTaskReminder(id);
     tasks.removeWhere((e) => e.id == id);
     toDoTasks.removeWhere((task) => task.id == id);
     completeTask.removeWhere((task) => task.id == id);
     HiveStorageManger().saveTasks(tasks);
+    FirestoreSyncService().deleteTaskFromCloud(id);
+    FirestoreSyncService().syncToCloud();
     notifyListeners();
   }
 
