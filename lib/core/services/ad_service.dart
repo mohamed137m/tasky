@@ -13,8 +13,8 @@ class AdService {
   // Production Ad Unit IDs (Can be set by developer)
   String? prodAndroidBannerId = 'ca-app-pub-4191709124418768/2363000452';
   String? prodIOSBannerId = 'ca-app-pub-4191709124418768/2363000452';
-  String? prodAndroidInterstitialId = 'ca-app-pub-4191709124418768/8283656959';
-  String? prodIOSInterstitialId = 'ca-app-pub-4191709124418768/8283656959';
+  String? prodAndroidInterstitialId = 'ca-app-pub-4803928008765871/8675833763';
+  String? prodIOSInterstitialId = 'ca-app-pub-4803928008765871/8675833763';
 
   // Google Official Sample Test Ad Unit IDs
   static const String _testAndroidBanner = 'ca-app-pub-3940256099942544/6300978111';
