@@ -11,8 +11,8 @@ class AdService {
   bool isTestMode = false; // Production Mode ACTIVE
 
   // Production Ad Unit IDs (Can be set by developer)
-  String? prodAndroidBannerId = 'ca-app-pub-4191709124418768/2363000452';
-  String? prodIOSBannerId = 'ca-app-pub-4191709124418768/2363000452';
+  String? prodAndroidBannerId = 'ca-app-pub-4803928008765871/6049670425';
+  String? prodIOSBannerId = 'ca-app-pub-4803928008765871/6049670425';
   String? prodAndroidInterstitialId = 'ca-app-pub-4803928008765871/8675833763';
   String? prodIOSInterstitialId = 'ca-app-pub-4803928008765871/8675833763';
 
